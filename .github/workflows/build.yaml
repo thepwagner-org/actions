@@ -5,6 +5,10 @@ on:
       image:
         required: true
         type: string
+    secrets:
+      # Don't pass ${{secrets.GITHUB_TOKEN}}, as we want Actions to trigger on push
+      not_github_token:
+        required: true      
 
 # Documentation only: the caller defines permission
 permissions:
@@ -21,3 +25,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: "🌎 Logging in to Docker Registry"
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 # tag=v1
+        with:
+          registry: ghcr.io
+          username: ${{github.repository_owner}}
+          password: ${{secrets.not_github_token}}
+
+      - name: "🚧 Building image"
+        run: docker build -t ghcr.io/${{github.repository}}:${{github.sha}} .
