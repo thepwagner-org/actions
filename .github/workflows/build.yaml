@@ -70,11 +70,11 @@ jobs:
           # On mismatch, commit and push the updated SBOM:
           git reset origin/${GITHUB_HEAD_REF}
           mv sbom.cyclonedx.json Dockerfile.cyclonedx.json
-          git config user.name "${{input.committer}}"
-          git config user.email "${{input.committer_email}}"
+          git config user.name "${{inputs.committer}}"
+          git config user.email "${{inputs.committer_email}}"
           git add Dockerfile.cyclonedx.json
           git commit -m'generated SBOM'
-          git push "https://${{input.committer}}:${{secrets.not_github_token}}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_HEAD_REF}
+          git push "https://${{inputs.committer}}:${{secrets.not_github_token}}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_HEAD_REF}
           exit 1
       - name: "🔊 Comment on PR"
         uses: actions/github-script@9ac08808f993958e9de277fe43a64532a609130e # tag=v6
