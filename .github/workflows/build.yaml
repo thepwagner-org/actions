@@ -2,13 +2,20 @@ name: Build
 on:
   workflow_call:
     inputs:
-      image:
-        required: true
+      committer:
+        required: false
         type: string
+        description: The committer name
+        default: "wapwagner" # wapwagner number one
+      committer_email:
+        required: false
+        type: string
+        description: The committer email
+        default: "70587923+wapwagner@users.noreply.github.com"
     secrets:
-      # Don't pass ${{secrets.GITHUB_TOKEN}}, as we want Actions to trigger on push
       not_github_token:
-        required: true      
+        required: true
+        description: A non-Actions GitHub token, so Actions will react to pushes.
 
 # Documentation only: the caller defines permission
 permissions:
@@ -34,3 +41,50 @@ jobs:
 
       - name: "🚧 Building image"
         run: docker build -t ghcr.io/${{github.repository}}:${{github.sha}} .
+
+      - name: "📷 Setup Syft"
+        uses: anchore/sbom-action/download-syft@407a3ec314b07e326eff3ba171091cbc150460a8 # tag=v0.10.0
+      - name: "📸 Generate SBOM"
+        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
+
+      - name: "🕵️ Verify SBOM"
+        id: verify
+        run: |
+          BUILT_PACKAGES=$(jq -r '.components[].purl' sbom.cyclonedx.json | sort)
+          echo "Built packages:"
+          echo "$BUILT_PACKAGES" | tee built.txt
+          echo ""
+          echo ""
+          echo ""
+
+          STORED_PACKAGES=$(jq -r '.components[].purl' Dockerfile.cyclonedx.json| sort)
+          echo "Stored packages:"
+          echo "$STORED_PACKAGES" | tee stored.txt
+
+          # Exit if packages match the committed SBOM
+          (diff -b -U 0 stored.txt built.txt || true) > pkgdiff.txt
+          if [[ ! -s pkgdiff.txt ]]; then
+            exit 0
+          fi
+
+          # On mismatch, commit and push the updated SBOM:
+          git reset origin/${GITHUB_HEAD_REF}
+          mv sbom.cyclonedx.json Dockerfile.cyclonedx.json
+          git config user.name "${{input.committer}}"
+          git config user.email "${{input.committer_email}}"
+          git add Dockerfile.cyclonedx.json
+          git commit -m'generated SBOM'
+          git push "https://${{input.committer}}:${{secrets.not_github_token}}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_HEAD_REF}
+          exit 1
+      - name: "🔊 Comment on PR"
+        uses: actions/github-script@9ac08808f993958e9de277fe43a64532a609130e # tag=v6
+        if: ${{ failure() && steps.verify.outcome == 'failure'}}
+        with:
+          script: |
+            const fs = require('fs');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '```\n' + fs.readFileSync('pkgdiff.txt') + '\n```',
+            });
