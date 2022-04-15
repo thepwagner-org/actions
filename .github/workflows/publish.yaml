@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
   actions: read
+  
+env:
+  DOCKER_BUILDKIT: 1
 
 jobs:
   publish:
