@@ -5,8 +5,6 @@ on:
       token:
         required: true
         description: GitHub token
-      read_token:
-        required: true
 
 permissions:
   contents: read
@@ -34,7 +32,7 @@ jobs:
       - name: "🚧 Building image"
         run: docker build --secret id=git-credentials,env=GITHUB_TOKEN -t ghcr.io/${{github.repository}}:${{github.sha}} .
         env:
-          GITHUB_TOKEN: ${{secrets.read_token}}
+          GITHUB_TOKEN: ${{secrets.token}}
 
       - name: "📷 Setup Syft"
         uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
