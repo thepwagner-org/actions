@@ -57,7 +57,6 @@ jobs:
             OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
             BUILT_PACKAGES=$(echo -e "$BUILT_PACKAGES" | grep -v "$OWN_MODULE")
           fi
-
           echo "Built packages:"
           echo "$BUILT_PACKAGES" | tee built.txt
           echo ""

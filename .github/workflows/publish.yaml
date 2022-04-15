@@ -40,14 +40,22 @@ jobs:
       - name: "🕵️ Verify SBOM"
         run: |
           # Exit if packages match the committed SBOM
-          BUILT_PACKAGES=$(jq -r '.components[].purl' sbom.cyclonedx.json | sort)
+          BUILT_PACKAGES=$(jq -r '.components[].purl' sbom.cyclonedx.json | grep -v ^null | sort)
+          if [[ -f go.mod ]]; then
+            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
+            BUILT_PACKAGES=$(echo -e "$BUILT_PACKAGES" | grep -v "$OWN_MODULE")
+          fi
           echo "Built packages:"
           echo "$BUILT_PACKAGES" | tee built.txt
           echo ""
           echo ""
           echo ""
 
-          STORED_PACKAGES=$(jq -r '.components[].purl' Dockerfile.cyclonedx.json| sort)
+          STORED_PACKAGES=$(jq -r '.components[].purl' Dockerfile.cyclonedx.json | grep -v ^null | sort)
+          if [[ -f go.mod ]]; then
+            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
+            STORED_PACKAGES=$(echo -e "$STORED_PACKAGES" | grep -v "$OWN_MODULE")
+          fi
           echo "Stored packages:"
           echo "$STORED_PACKAGES" | tee stored.txt
 
