@@ -21,6 +21,9 @@ permissions:
   contents: write 
   actions: write
   pull-requests: write
+  
+env:
+  DOCKER_BUILDKIT: 1
 
 jobs:
   build:
