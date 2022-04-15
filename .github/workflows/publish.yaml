@@ -6,10 +6,9 @@ on:
         required: true
         description: GitHub token
 
-# Documentation only: the caller defines permission
 permissions:
-  contents: write
-  actions: write
+  contents: read
+  actions: read
 
 jobs:
   build:

@@ -17,7 +17,6 @@ on:
         required: true
         description: A non-Actions GitHub token, so Actions will react to pushes.
 
-# Documentation only: the caller defines permission
 permissions:
   contents: write 
   actions: write
