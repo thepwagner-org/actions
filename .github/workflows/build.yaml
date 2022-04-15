@@ -45,7 +45,7 @@ jobs:
         run: docker build -t ghcr.io/${{github.repository}}:${{github.sha}} .
 
       - name: "📷 Setup Syft"
-        uses: anchore/sbom-action/download-syft@407a3ec314b07e326eff3ba171091cbc150460a8 # tag=v0.10.0
+        uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
       - name: "📸 Generate SBOM"
         run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
 
