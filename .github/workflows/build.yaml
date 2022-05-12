@@ -89,7 +89,7 @@ jobs:
           git push "https://${{inputs.committer}}:${{secrets.not_github_token}}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_HEAD_REF}
           exit 1
       - name: "🔊 Comment on PR"
-        uses: actions/github-script@9ac08808f993958e9de277fe43a64532a609130e # tag=v6.0.0
+        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # tag=v6.1.0
         if: ${{ failure() && steps.verify.outcome == 'failure'}}
         with:
           script: |
