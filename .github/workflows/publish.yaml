@@ -38,5 +38,12 @@ jobs:
           username: ${{github.repository_owner}}
           password: ${{secrets.token}}
 
-      - name: "🚧 Pulling image"
+      - name: "👇 Pulling image"
         run: docker pull ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+      - name: "👆 Pushing image"
+        run: |
+          docker tag ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} ghcr.io/${{github.repository}}:latest
+          docker push ghcr.io/${{github.repository}}:latest
+      - name: "🔏 Signing image"
+        run: |
+          cosign sign --force ghcr.io/${{github.repository}}:latest
