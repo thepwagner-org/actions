@@ -1,29 +1,20 @@
 name: Build
 on:
   workflow_call:
-    inputs:
-      committer:
-        required: false
-        type: string
-        description: The committer name
-        default: "wapwagner" # wapwagner number one
-      committer_email:
-        required: false
-        type: string
-        description: The committer email
-        default: "70587923+wapwagner@users.noreply.github.com"
     secrets:
-      not_github_token:
+      token:
         required: true
-        description: A non-Actions GitHub token, so Actions will react to pushes.
+        description: GitHub token
 
 permissions:
-  contents: write 
-  actions: write
+  contents: read
+  packages: write
   pull-requests: write
-  
+  id-token: write
+
 env:
   DOCKER_BUILDKIT: 1
+  COSIGN_EXPERIMENTAL: true
 
 jobs:
   build:
@@ -34,69 +25,35 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: "🌎 Logging in to Docker Registry"
+      - name: "🌎 Setup Syft"
+        uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
+      - name: "🌎 Setup Cosign"
+        uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25 # tag=v2.4.0
+
+      - name: "🕵️ Extract git tree"
+        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        id: git-data
+
+      - name: "🐳 Logging in to Docker Registry"
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # tag=v2.0.0
         with:
           registry: ghcr.io
           username: ${{github.repository_owner}}
-          password: ${{secrets.not_github_token}}
-
+          password: ${{secrets.token}}
       - name: "🚧 Building image"
-        run: docker build --secret id=git-credentials,env=GITHUB_TOKEN -t ghcr.io/${{github.repository}}:${{github.sha}} .
-        env:
-          GITHUB_TOKEN: ${{secrets.not_github_token}}
-
-      - name: "📷 Setup Syft"
-        uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
+        run: docker build -t ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} .
       - name: "📸 Generate SBOM"
-        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
+        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
-      - name: "🕵️ Verify SBOM"
-        id: verify
+      - name: "📦 Pushing image"
+        run: docker push ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+      - name: "🔏 Pushing SBOM"
         run: |
-          BUILT_PACKAGES=$(jq -r '.components[].purl' sbom.cyclonedx.json | grep -v ^null | sort)
-          if [[ -f go.mod ]]; then
-            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
-            BUILT_PACKAGES=$(echo -e "$BUILT_PACKAGES" | grep -v "$OWN_MODULE")
-          fi
-          echo "Built packages:"
-          echo "$BUILT_PACKAGES" | tee built.txt
-          echo ""
-          echo ""
-          echo ""
+          cosign attest --force --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
-          STORED_PACKAGES=$(jq -r '.components[].purl' Dockerfile.cyclonedx.json | grep -v ^null | sort)
-          if [[ -f go.mod ]]; then
-            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
-            STORED_PACKAGES=$(echo -e "$STORED_PACKAGES" | grep -v "$OWN_MODULE")
-          fi
-          echo "Stored packages:"
-          echo "$STORED_PACKAGES" | tee stored.txt
-
-          # Exit if packages match the committed SBOM
-          (diff -b -U 0 stored.txt built.txt || true) > pkgdiff.txt
-          if [[ ! -s pkgdiff.txt ]]; then
-            exit 0
-          fi
-
-          # On mismatch, commit and push the updated SBOM:
-          git reset origin/${GITHUB_HEAD_REF}
-          mv sbom.cyclonedx.json Dockerfile.cyclonedx.json
-          git config user.name "${{inputs.committer}}"
-          git config user.email "${{inputs.committer_email}}"
-          git add Dockerfile.cyclonedx.json
-          git commit -m'generated SBOM'
-          git push "https://${{inputs.committer}}:${{secrets.not_github_token}}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_HEAD_REF}
-          exit 1
-      - name: "🔊 Comment on PR"
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # tag=v6.1.0
-        if: ${{ failure() && steps.verify.outcome == 'failure'}}
+      # TODO: pin after dev
+      - name: "📢 Post SBOM Diff"
+        uses: thepwagner/sbom-action@main
         with:
-          script: |
-            const fs = require('fs');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '```\n' + fs.readFileSync('pkgdiff.txt') + '\n```',
-            });
+          sbom: sbom.cyclonedx.json
+          base-image: ghcr.io/${{github.repository}}:latest
