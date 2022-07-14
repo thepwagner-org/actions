@@ -8,10 +8,12 @@ on:
 
 permissions:
   contents: read
-  actions: read
-  
+  packages: write
+  id-token: write
+
 env:
   DOCKER_BUILDKIT: 1
+  COSIGN_EXPERIMENTAL: true
 
 jobs:
   publish:
@@ -22,47 +24,19 @@ jobs:
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
         with:
           persist-credentials: false
-      - name: "🌎 Logging in to Docker Registry"
+      - name: "🌎 Setup Cosign"
+        uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25 # tag=v2.4.0
+
+      - name: "🕵️ Extract git tree"
+        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        id: git-data
+
+      - name: "🐳 Logging in to Docker Registry"
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # tag=v2.0.0
         with:
           registry: ghcr.io
           username: ${{github.repository_owner}}
           password: ${{secrets.token}}
 
-      - name: "🚧 Building image"
-        run: docker build --secret id=git-credentials,env=GITHUB_TOKEN -t ghcr.io/${{github.repository}}:${{github.sha}} .
-        env:
-          GITHUB_TOKEN: ${{secrets.token}}
-
-      - name: "📷 Setup Syft"
-        uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
-      - name: "📸 Generate SBOM"
-        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
-
-      - name: "🕵️ Verify SBOM"
-        run: |
-          # Exit if packages match the committed SBOM
-          BUILT_PACKAGES=$(jq -r '.components[].purl' sbom.cyclonedx.json | grep -v ^null | sort)
-          if [[ -f go.mod ]]; then
-            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
-            BUILT_PACKAGES=$(echo -e "$BUILT_PACKAGES" | grep -v "$OWN_MODULE")
-          fi
-          echo "Built packages:"
-          echo "$BUILT_PACKAGES" | tee built.txt
-          echo ""
-          echo ""
-          echo ""
-
-          STORED_PACKAGES=$(jq -r '.components[].purl' Dockerfile.cyclonedx.json | grep -v ^null | sort)
-          if [[ -f go.mod ]]; then
-            OWN_MODULE=$(grep ^module go.mod | cut -d' ' -f2)
-            STORED_PACKAGES=$(echo -e "$STORED_PACKAGES" | grep -v "$OWN_MODULE")
-          fi
-          echo "Stored packages:"
-          echo "$STORED_PACKAGES" | tee stored.txt
-
-          (diff -b -U 0 stored.txt built.txt || true) > pkgdiff.txt
-          [[ -s pkgdiff.txt ]] && exit 1
-
-          docker tag ghcr.io/${{github.repository}}:${{github.sha}} ghcr.io/${{github.repository}}:latest
-          docker push ghcr.io/${{github.repository}}:latest
+      - name: "🚧 Pulling image"
+        run: docker pull ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}

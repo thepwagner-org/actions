@@ -4,6 +4,7 @@ on:
     secrets:
       token:
         required: true
+        description: GitHub token
 
 permissions:
   contents: read
@@ -29,6 +30,10 @@ jobs:
       - name: "🌎 Setup Cosign"
         uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25 # tag=v2.4.0
 
+      - name: "🕵️ Extract git tree"
+        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        id: git-data
+
       - name: "🐳 Logging in to Docker Registry"
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # tag=v2.0.0
         with:
@@ -36,15 +41,15 @@ jobs:
           username: ${{github.repository_owner}}
           password: ${{secrets.token}}
       - name: "🚧 Building image"
-        run: docker build -t ghcr.io/${{github.repository}}:${{github.sha}} .
+        run: docker build -t ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} .
       - name: "📸 Generate SBOM"
-        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
+        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
       - name: "📦 Pushing image"
-        run: docker push ghcr.io/${{github.repository}}:${{github.sha}}
+        run: docker push ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
       - name: "🔏 Pushing SBOM"
         run: |
-          cosign attest --force --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{github.sha}}
+          cosign attest --force --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
       # TODO: pin after dev
       - name: "📢 Post SBOM Diff"
