@@ -53,7 +53,7 @@ jobs:
 
       # TODO: pin after dev
       - name: "📢 Post SBOM Diff"
-        uses: thepwagner/sbom-action@acf0039df1a38433e64fcb02aa0674c42a5ca2a1 # tag=v0.0.1
+        uses: thepwagner/sbom-action@42356b323609cb9c5fa4c7bb37405bc635ad61a3 # tag=v0.0.3
         with:
           sbom: sbom.cyclonedx.json
           base-image: ghcr.io/${{github.repository}}:latest
