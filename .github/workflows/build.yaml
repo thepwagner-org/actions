@@ -51,7 +51,7 @@ jobs:
         run: docker push ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
       - name: "🔏 Pushing SBOM"
         run: |
-          cosign attest --force --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+          cosign attest --force --type cyclonedx --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
       # TODO: pin after dev
       - name: "📢 Post SBOM Diff"
