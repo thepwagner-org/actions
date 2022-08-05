@@ -25,8 +25,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: "🌎 Setup Syft"
-        uses: anchore/sbom-action/download-syft@bb716408e75840bbb01e839347cd213767269d4a # tag=v0.11.0
       - name: "🌎 Setup Cosign"
         uses: sigstore/cosign-installer@09a077b27eb1310dcfb21981bee195b30ce09de0 # tag=v2.5.0
 
@@ -43,15 +41,18 @@ jobs:
       - name: "🚧 Building image"
         run: docker build -t ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} .
       - name: "📸 Generate SBOM"
-        run: syft packages -o cyclonedx-json=sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+        uses: aquasecurity/trivy-action@cb606dfdb0d2b3698ace62192088ef4f5360b24f # tag=0.6.2
+        with:
+          image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+          format: cyclonedx
+          output: sbom.cyclonedx.json
 
       - name: "📦 Pushing image"
         run: docker push ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
       - name: "🔏 Pushing SBOM"
         run: |
-          cosign attest --force --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+          cosign attest --force --type cyclonedx --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
-      # TODO: pin after dev
       - name: "📢 Post SBOM Diff"
         uses: thepwagner/sbom-action@2f876e5ca3a23af0aaa837bf84707724ee8ed9d3 # tag=v0.0.4
         with:
