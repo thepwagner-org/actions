@@ -54,7 +54,7 @@ jobs:
           cosign attest --force --type cyclonedx --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
       - name: "📢 Post SBOM Diff"
-        uses: thepwagner/sbom-action@2f876e5ca3a23af0aaa837bf84707724ee8ed9d3 # tag=v0.0.4
+        uses: thepwagner/sbom-action@cyclonedx-predicate
         with:
           sbom: sbom.cyclonedx.json
           base-image: ghcr.io/${{github.repository}}:latest
