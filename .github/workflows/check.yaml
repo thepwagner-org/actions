@@ -68,8 +68,8 @@ jobs:
         run: |
           git config user.name "${{inputs.committer}}"
           git config user.email "${{inputs.committer_email}}"
-          date > updates-checked.txt
-          git add updates-checked.txt
-          git commit -m "Trigger rebuild"
-          git checkout -b sbom-diff-trigger-rebuild
-          gh pr create --title "Trigger rebuild" --body 'I am expecting this to pull in fresh packages'
+          sed -i "s/Last Checked:.*/Last Checked: $(date --rfc-3339=seconds)/" README.md
+          git add README.md
+          git commit -m "Check for updates"
+          git push origin HEAD:sbom-diff-check-for-updates
+          gh pr create --title "Check for updates" --body 'I am expecting this to pull in fresh packages'
