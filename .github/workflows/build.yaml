@@ -45,6 +45,7 @@ jobs:
         with:
           image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
           format: cyclonedx
+          security-checks: vuln
           output: sbom.cyclonedx.json
 
       - name: "📦 Pushing image"
