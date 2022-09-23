@@ -1,0 +1,74 @@
+name: Check
+on:
+  workflow_call:
+    inputs:
+      committer:
+        required: false
+        type: string
+        description: The committer name
+        default: "wapwagner" # wapwagner number one
+      committer_email:
+        required: false
+        type: string
+        description: The committer email
+        default: "70587923+wapwagner@users.noreply.github.com"
+    secrets:
+      not_github_token:
+        required: true
+        description: A non-Actions GitHub token, so Actions will react to pushes.
+
+permissions:
+  contents: write
+  packages: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "🌎 Fetching code"
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3.0.2
+        with:
+          fetch-depth: 0
+          token: ${{secrets.not_github_token}}
+      - name: "🌎 Setup Cosign"
+        uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 # tag=v2.6.0
+
+      - name: "🕵️ Extract git tree"
+        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        id: git-data
+
+      - name: "🐳 Logging in to Docker Registry"
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # tag=v2.0.0
+        with:
+          registry: ghcr.io
+          username: ${{github.repository_owner}}
+          password: ${{secrets.not_github_token}}
+      - name: "🚧 Building image"
+        run: docker build -t ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} .
+      - name: "📸 Generate SBOM"
+        uses: aquasecurity/trivy-action@d63413b0a4a4482237085319f7f4a1ce99a8f2ac # tag=0.7.1
+        with:
+          image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+          format: cyclonedx
+          output: sbom.cyclonedx.json
+
+      - name: "🕵️‍♀️ Detecting SBOM Diff"
+        id: sbom-diff
+        uses: thepwagner/sbom-action@8a00fde33e1101b26e5a4a4436b4ccb85744194f # tag=v0.2.0
+        with:
+          sbom: sbom.cyclonedx.json
+          base-image: ghcr.io/${{github.repository}}:latest
+
+      - name: "🤖 Open PR"
+        if: ${{steps.sbom-diff.outputs.packages-changed == 'true'}}
+        env:
+          GITHUB_TOKEN: ${{secrets.not_github_token}}
+        run: |
+          git config user.name "${{inputs.committer}}"
+          git config user.email "${{inputs.committer_email}}"
+          sed -i "s/Last Checked:.*/Last Checked: $(date --rfc-3339=seconds)/" README.md
+          git add README.md
+          git commit -m "Check for updates"
+          git push -f origin HEAD:sbom-diff-check-for-updates
+          gh pr create --head sbom-diff-check-for-updates --title "Check for updates" --body 'I am expecting this to pull in fresh packages'
