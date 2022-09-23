@@ -71,5 +71,5 @@ jobs:
           sed -i "s/Last Checked:.*/Last Checked: $(date --rfc-3339=seconds)/" README.md
           git add README.md
           git commit -m "Check for updates"
-          git push origin HEAD:sbom-diff-check-for-updates
+          git push -f origin HEAD:sbom-diff-check-for-updates
           gh pr create --head sbom-diff-check-for-updates --title "Check for updates" --body 'I am expecting this to pull in fresh packages'
