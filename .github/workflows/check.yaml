@@ -47,7 +47,7 @@ jobs:
       - name: "🚧 Building image"
         run: docker build -t ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}} .
       - name: "📸 Generate SBOM"
-        uses: aquasecurity/trivy-action@b43daad0c3c96202fc5800b511dfae8e6ecce864 # 0.11.0
+        uses: aquasecurity/trivy-action@41f05d9ecffa2ed3f1580af306000f734b733e54 # 0.11.2
         with:
           image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
           format: cyclonedx
