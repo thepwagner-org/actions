@@ -1,15 +1,19 @@
 name: Scorecard analysis workflow
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
+        description: GitHub token
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
 
     steps:
@@ -23,4 +27,5 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
+          repo-token: ${{secrets.token}}
           publish_results: true
