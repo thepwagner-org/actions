@@ -27,5 +27,5 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          repo-token: ${{secrets.token}}
+          repo_token: ${{secrets.token}}
           publish_results: true
