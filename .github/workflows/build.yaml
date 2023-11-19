@@ -28,7 +28,7 @@ jobs:
         uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 # v3.2.0
 
       - name: "🕵️ Extract git tree"
-        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        run: echo "tree=$(git log --pretty='%T' -1)" >> $GITHUB_OUTPUT
         id: git-data
 
       - name: "🐳 Logging in to Docker Registry"
@@ -44,7 +44,7 @@ jobs:
         with:
           image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
           format: cyclonedx
-          scanners: scanners
+          scanners: vuln
           output: sbom.cyclonedx.json
 
       - name: "📦 Pushing image"
