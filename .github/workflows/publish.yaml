@@ -13,7 +13,6 @@ permissions:
 
 env:
   DOCKER_BUILDKIT: 1
-  COSIGN_EXPERIMENTAL: true
 
 jobs:
   publish:
@@ -28,7 +27,7 @@ jobs:
         uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 # v3.2.0
 
       - name: "🕵️ Extract git tree"
-        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        run: echo "tree=$(git log --pretty='%T' -1)" >> $GITHUB_OUTPUT
         id: git-data
 
       - name: "🐳 Logging in to Docker Registry"
@@ -46,4 +45,4 @@ jobs:
           docker push ghcr.io/${{github.repository}}:latest
       - name: "🔏 Signing image"
         run: |
-          cosign sign --force ghcr.io/${{github.repository}}:latest
+          cosign sign -y ghcr.io/${{github.repository}}:latest

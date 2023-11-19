@@ -14,7 +14,6 @@ permissions:
 
 env:
   DOCKER_BUILDKIT: 1
-  COSIGN_EXPERIMENTAL: true
 
 jobs:
   build:
@@ -29,7 +28,7 @@ jobs:
         uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 # v3.2.0
 
       - name: "🕵️ Extract git tree"
-        run: echo ::set-output name=tree::$(git log --pretty='%T' -1)
+        run: echo "tree=$(git log --pretty='%T' -1)" >> $GITHUB_OUTPUT
         id: git-data
 
       - name: "🐳 Logging in to Docker Registry"
@@ -45,17 +44,17 @@ jobs:
         with:
           image-ref: ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
           format: cyclonedx
-          security-checks: vuln
+          scanners: vuln
           output: sbom.cyclonedx.json
 
       - name: "📦 Pushing image"
         run: docker push ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
       - name: "🔏 Pushing SBOM"
         run: |
-          cosign attest --force --type cyclonedx --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
+          cosign attest --yes --type cyclonedx --predicate sbom.cyclonedx.json ghcr.io/${{github.repository}}:${{steps.git-data.outputs.tree}}
 
       - name: "📢 Post SBOM Diff"
-        uses: thepwagner/sbom-action@8a00fde33e1101b26e5a4a4436b4ccb85744194f # tag=v0.2.0
+        uses: thepwagner/sbom-action@0aea187c13531eecf8cd40c708e7676539bf75b8 # tag=v0.3.0
         with:
           sbom: sbom.cyclonedx.json
           base-image: ghcr.io/${{github.repository}}:latest
