@@ -55,7 +55,7 @@ jobs:
 
       - name: "🕵️‍♀️ Detecting SBOM Diff"
         id: sbom-diff
-        uses: thepwagner/sbom-action@0aea187c13531eecf8cd40c708e7676539bf75b8 # tag=v0.3.0
+        uses: thepwagner/sbom-action@141023c054874fac8ae6436650d901db39425cf0 # v0.3.1
         with:
           sbom: sbom.cyclonedx.json
           base-image: ghcr.io/${{github.repository}}:latest
