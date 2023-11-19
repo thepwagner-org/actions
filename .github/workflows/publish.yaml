@@ -13,7 +13,6 @@ permissions:
 
 env:
   DOCKER_BUILDKIT: 1
-  COSIGN_EXPERIMENTAL: true
 
 jobs:
   publish:
@@ -46,4 +45,4 @@ jobs:
           docker push ghcr.io/${{github.repository}}:latest
       - name: "🔏 Signing image"
         run: |
-          cosign sign --force ghcr.io/${{github.repository}}:latest
+          cosign sign -y ghcr.io/${{github.repository}}:latest
