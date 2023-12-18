@@ -3,16 +3,15 @@
 on:
   workflow_call:
     inputs:
-      docker:
-        required: false
-        type: boolean
-        description: Whether the release will be pushed to GitHub packages
-        default: false
       go-version-file:
         required: false
         type: string
         description: Path to go.mod file
         default: "go.mod"
+    secrets:
+      ghcr-token:
+        required: false
+        description: Whether the release will be pushed to GitHub packages
 
 permissions: {}
 
@@ -33,11 +32,11 @@ jobs:
           go-version-file: ${{inputs.go-version-file}}
       - name: "🐳 Logging in to Docker Registry"
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
-        if: ${{inputs.docker}}
+        if: ${{ secrets.ghcr-token != "" }}
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.ghcr-token }}
       - name: "📦 Release"
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # tag=v5.0.0
         with:
