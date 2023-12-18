@@ -8,6 +8,11 @@ on:
         type: boolean
         description: Whether the release will be pushed to GitHub packages
         default: false
+      go-version-file:
+        required: false
+        type: string
+        description: Path to go.mod file
+        default: "go.mod"
 
 permissions: {}
 
@@ -22,6 +27,10 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: ${{inputs.go-version-file}}
       - name: "🐳 Logging in to Docker Registry"
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         if: ${{inputs.docker}}
