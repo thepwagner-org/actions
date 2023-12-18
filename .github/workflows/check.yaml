@@ -1,4 +1,5 @@
-name: Check
+# Example repository: https://github.com/thepwagner-org/debian
+
 on:
   workflow_call:
     inputs:
@@ -17,14 +18,15 @@ on:
         required: true
         description: A non-Actions GitHub token, so Actions will react to pushes.
 
-permissions:
-  contents: write
-  packages: read
-  pull-requests: write
+permissions: {}
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+      pull-requests: write
     steps:
       - name: "🌎 Fetching code"
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
