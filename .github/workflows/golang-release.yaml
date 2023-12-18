@@ -24,8 +24,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      packages: write
+      contents: write # to attach artifacts to releases
     steps:
       - name: "🌎 Fetching code"
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
