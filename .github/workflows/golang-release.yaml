@@ -1,0 +1,50 @@
+# Example repository: https://github.com/thepwagner/github-token-factory-oidc
+
+on:
+  workflow_call:
+    inputs:
+      docker:
+        required: false
+        type: boolean
+        description: Whether to build and push a Docker image
+        default: false
+      go-version-file:
+        required: false
+        type: string
+        description: Path to go.mod file
+        default: "go.mod"
+    secrets:
+      ghcr-token:
+        required: false
+        description: Token to use for GitHub container registry
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to attach artifacts to releases
+    steps:
+      - name: "🌎 Fetching code"
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+      - name: "🌎 Setup Go"
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version-file: ${{inputs.go-version-file}}
+      - name: "🐳 Logging in to Docker Registry"
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        if: ${{ inputs.docker }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.ghcr-token }}
+      - name: "📦 Release"
+        uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # tag=v5.0.0
+        with:
+          version: v1.22.1
+          args: release --clean --parallelism=1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
