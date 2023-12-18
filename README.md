@@ -8,7 +8,8 @@ These are GitHub Actions reusable workflows:
 I'm currently using Trivy to generate SBOMs including vulnerabilty scans, and loving it!
 
 You can see these in use in:
-* https://github.com/thepwagner-org/debian-bullseye - base image
+* https://github.com/thepwagner-org/debian - base image
 * https://github.com/thepwagner-org/duplicity - consumer image
+* https://github.com/thepwagner/github-token-factory-oidc - golang app
 
 This repo is also a demonstration of versioning reusable workflows: changes are staged in the `main` branch, but most users of the workflows follow tagged releases and are pushed updates via RenovateBot pull request - [example](https://github.com/thepwagner-org/debian-bullseye/pull/162).
