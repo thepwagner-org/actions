@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # to attach artifacts to releases
+      id-token: write
+      attestations: write
     steps:
       - name: "🌎 Fetching code"
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
@@ -48,3 +50,11 @@ jobs:
           args: release --clean --parallelism=1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "🔏 Sign .deb"
+        uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        with:
+          subject-path: "dist/*.deb"
+      - name: "🔏 Sign .tar.gz"
+        uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        with:
+          subject-path: "dist/*.tar.gz"
