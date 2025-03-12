@@ -82,6 +82,6 @@ jobs:
       - name: "🌎 Fetching linter configuration"
         run: curl -o .golangci.yml -sSfL https://raw.githubusercontent.com/thepwagner-org/golangci-lint/main/.golangci.yml
       - name: "🚓 Lint"
-        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # v6.5.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           args: --timeout=30m
