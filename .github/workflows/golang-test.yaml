@@ -29,6 +29,13 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: ${{inputs.go-version-file}}
+          cache: true
+      - name: "📊 Cache diagnostics"
+        run: |
+          echo "GOMODCACHE: $(go env GOMODCACHE)"
+          echo "GOCACHE: $(go env GOCACHE)"
+          du -sh $(go env GOMODCACHE) 2>/dev/null || echo "No mod cache yet"
+          du -sh $(go env GOCACHE) 2>/dev/null || echo "No build cache yet"
       - name: "🐧 Install deb dependencies"
         if: ${{inputs.deb-packages != ''}}
         env:
@@ -44,7 +51,7 @@ jobs:
 
       - name: "🧪 Test"
         run: |
-          go test -v -coverprofile=coverage.out -race ./...
+          go test -v -coverprofile=coverage.out -p 4 ./...
           go tool cover -html=coverage.out -o=coverage.html
 
       - name: "💾 Upload coverage"
@@ -66,6 +73,13 @@ jobs:
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: ${{inputs.go-version-file}}
+          cache: true
+      - name: "📊 Cache diagnostics"
+        run: |
+          echo "GOMODCACHE: $(go env GOMODCACHE)"
+          echo "GOCACHE: $(go env GOCACHE)"
+          du -sh $(go env GOMODCACHE) 2>/dev/null || echo "No mod cache yet"
+          du -sh $(go env GOCACHE) 2>/dev/null || echo "No build cache yet"
       - name: "🐧 Install deb dependencies"
         if: ${{inputs.deb-packages != ''}}
         env:
@@ -85,3 +99,6 @@ jobs:
         uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47 # v9.0.0
         with:
           args: --timeout=30m
+          skip-cache: false
+          skip-pkg-cache: false
+          skip-build-cache: false
