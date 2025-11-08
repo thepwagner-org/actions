@@ -100,5 +100,3 @@ jobs:
         with:
           args: --timeout=30m
           skip-cache: false
-          skip-pkg-cache: false
-          skip-build-cache: false
